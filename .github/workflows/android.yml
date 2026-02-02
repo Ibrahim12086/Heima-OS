@@ -1,54 +1,51 @@
-name: Final Stable Build
+name: Manual Build
 on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # استخدام نسخة أقدم وأكثر استقراراً
+    runs-on: ubuntu-22.04 # نسخة مستقرة جداً مع بايثون
     
     steps:
       - uses: actions/checkout@v4
 
+      # 1. تجهيز بايثون وإلغاء الكاش القديم
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python_version: '3.10' # بايثون 3.10 أفضل للبناء من 3.11
+          python_version: '3.10'
 
-      - name: Install System Dependencies
+      # 2. تنزيل المكاتب الضرورية عشان Pillow و Kivy يشتغلوا
+      - name: Install System Deps
         run: |
           sudo apt-get update
-          # تثبيت مكتبات الصور عشان Pillow ومكتبات النظام عشان Buildozer
-          sudo apt-get install -y build-essential libffi-dev libssl-dev python3-setuptools libltdl-dev zlib1g-dev libjpeg-dev libpng-dev libfreetype6-dev
+          sudo apt-get install -y build-essential libffi-dev libssl-dev python3-setuptools libltdl-dev zlib1g-dev libjpeg-dev libpng-dev
           pip install --upgrade pip
-          pip install buildozer cython==0.29.36 git+https://github.com/kivy/python-for-android.git
+          # تسطيب نسخة محددة من Cython و Buildozer عشان التوافق
+          pip install "cython<3.0.0" buildozer git+https://github.com/kivy/python-for-android.git
 
-      - name: Prepare Buildozer Spec
+      # 3. إنشاء ملف إعدادات جديد تماماً (عشان نضمن إن مفيش مسارات غلط)
+      - name: Generate Spec
         run: |
-          # حذف أي ملف قديم جاي من ترمكس
           rm -f buildozer.spec
-          # إنشاء ملف جديد نظيف تماماً
           buildozer init
-          
-          # تعديل الإعدادات الأساسية
+          # تعديلات أساسية
           sed -i 's/^title =.*/title = HeimaOS/' buildozer.spec
           sed -i 's/^package.name =.*/package.name = heimaos/' buildozer.spec
           sed -i 's/^package.domain =.*/package.domain = org.heima/' buildozer.spec
-          
-          # إضافة المتطلبات (مهم جداً تكون مكتوبة كدة)
-          sed -i 's/^requirements =.*/requirements = python3,kivy==2.3.0,telethon,pillow/' buildozer.spec
-          
-          # ضبط إصدارات الأندرويد عشان نتفادى مشاكل التحميل
+          # تحديد المكاتب (لاحظ شيلنا pillow مؤقتاً للتجربة لو حبيت، بس خليهم دلوقتي)
+          sed -i 's/^requirements =.*/requirements = python3,kivy==2.3.0,telethon,pyaes,rsa/' buildozer.spec
+          # ضبط إصدارات الأندرويد
           sed -i 's/^android.api =.*/android.api = 33/' buildozer.spec
-          sed -i 's/^# android.accept_sdk_license =.*/android.accept_sdk_license = True/' buildozer.spec
-          sed -i 's/^# android.archs =.*/android.archs = arm64-v8a/' buildozer.spec
+          sed -i 's/^android.accept_sdk_license =.*/android.accept_sdk_license = True/' buildozer.spec
 
+      # 4. بناء التطبيق (اللحظة الحاسمة)
       - name: Build APK
         run: |
-          # الأمر ده بيوافق على كل حاجة أوتوماتيك
           yes | buildozer -v android debug
         env:
-          # حل مشكلة الصلاحيات يدوياً
-          USER: $(whoami)
+          USER: runner
 
+      # 5. رفع الملف الناتج
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
