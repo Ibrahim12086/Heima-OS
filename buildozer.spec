@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Heima OS Control
+title = My Application
 
 # (str) Package name
-package.name = heimabot
+package.name = heimaos
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.heima
@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3, kivy==2.3.0, kivymd==1.2.0, telethon, pyaes, rsa, pillow
+requirements = python3,kivy==2.3.0,telethon,pyaes,rsa
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -95,7 +95,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = INTERNET
+#android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
@@ -119,13 +119,13 @@ android.permissions = INTERNET
 #android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-# android.ndk_path =
+#android.ndk_path =
 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
-# android.sdk_path =
+#android.sdk_path =
 
 # (str) ANT directory (if empty, it will be automatically downloaded.)
-# android.ant_path =
+#android.ant_path =
 
 # (bool) If True, then skip trying to update the Android sdk
 # This can be useful to avoid excess Internet downloads or save time
