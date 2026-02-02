@@ -1,5 +1,5 @@
-name: Build APK
-on: [push, pull_request]
+name: Auto-Fix and Build
+on: [push]
 
 jobs:
   build:
@@ -7,27 +7,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Auto-Fix Buildozer Spec
+        run: |
+          # تصحيح مسارات الأندرويد لبيئة جيت هاب
+          sed -i 's|^android.sdk_path =.*|# android.sdk_path =|' buildozer.spec
+          sed -i 's|^android.ndk_path =.*|# android.ndk_path =|' buildozer.spec
+          sed -i 's|^android.ant_path =.*|# android.ant_path =|' buildozer.spec
+          # التأكد من إصدار الـ API
+          sed -i 's/^android.api =.*/android.api = 33/' buildozer.spec
+          # إزالة أي مسارات محلية تانية
+          sed -i 's|^android.ndk =.*|android.ndk = 25b|' buildozer.spec
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python_version: '3.11'
 
-      - name: Install dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libffi-dev libssl-dev python3-setuptools
+          sudo apt-get install -y build-essential libffi-dev libssl-dev python3-setuptools libltdl-dev
           pip install --upgrade pip
           pip install buildozer cython git+https://github.com/kivy/python-for-android.git
 
       - name: Build APK
         run: |
-          # تنظيف أي مخلفات وبناء التطبيق
-          buildozer -v android debug
+          # قبول التراخيص وبدء البناء
+          yes | buildozer -v android debug
         env:
           USER: runner
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-apk
+          name: HeimaOS-Final-APK
           path: bin/*.apk
