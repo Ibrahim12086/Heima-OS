@@ -1,22 +1,56 @@
-name: Build APK
+name: Final Stable Build
 on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # استخدام نسخة أقدم وأكثر استقراراً
+    
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          buildozer_version: master
-          python_version: 3.11
-          command: buildozer -v android debug
-          repository_root: .
+          python_version: '3.10' # بايثون 3.10 أفضل للبناء من 3.11
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          # تثبيت مكتبات الصور عشان Pillow ومكتبات النظام عشان Buildozer
+          sudo apt-get install -y build-essential libffi-dev libssl-dev python3-setuptools libltdl-dev zlib1g-dev libjpeg-dev libpng-dev libfreetype6-dev
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.36 git+https://github.com/kivy/python-for-android.git
+
+      - name: Prepare Buildozer Spec
+        run: |
+          # حذف أي ملف قديم جاي من ترمكس
+          rm -f buildozer.spec
+          # إنشاء ملف جديد نظيف تماماً
+          buildozer init
+          
+          # تعديل الإعدادات الأساسية
+          sed -i 's/^title =.*/title = HeimaOS/' buildozer.spec
+          sed -i 's/^package.name =.*/package.name = heimaos/' buildozer.spec
+          sed -i 's/^package.domain =.*/package.domain = org.heima/' buildozer.spec
+          
+          # إضافة المتطلبات (مهم جداً تكون مكتوبة كدة)
+          sed -i 's/^requirements =.*/requirements = python3,kivy==2.3.0,telethon,pillow/' buildozer.spec
+          
+          # ضبط إصدارات الأندرويد عشان نتفادى مشاكل التحميل
+          sed -i 's/^android.api =.*/android.api = 33/' buildozer.spec
+          sed -i 's/^# android.accept_sdk_license =.*/android.accept_sdk_license = True/' buildozer.spec
+          sed -i 's/^# android.archs =.*/android.archs = arm64-v8a/' buildozer.spec
+
+      - name: Build APK
+        run: |
+          # الأمر ده بيوافق على كل حاجة أوتوماتيك
+          yes | buildozer -v android debug
+        env:
+          # حل مشكلة الصلاحيات يدوياً
+          USER: $(whoami)
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HeimaOS-Final
+          name: HeimaOS-APK
           path: bin/*.apk
